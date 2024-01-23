@@ -8,6 +8,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.inventory.PrepareAnvilEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -85,27 +87,13 @@ public class HangliderManager {
         PlayerInventory inventoryPlayer = player.getInventory();
         ItemStack itemInHand = inventoryPlayer.getItemInMainHand();
 
-        if (event.getFrom().getBlockY() <= event.getTo().getBlockY()) {
-            if(this.playersGliding.contains(player.getUniqueId())) {
-                player.setAllowFlight(false);
-                player.setFlying(false);
-                this.playersGliding.remove(player.getUniqueId());
-            }
-            return;
-        }
-
         if(!this.isHanglider(itemInHand)) {
-            if(this.playersGliding.contains(player.getUniqueId())) {
-                player.setAllowFlight(false);
-                player.setFlying(false);
-                this.playersGliding.remove(player.getUniqueId());
-            }
+            this.playersGliding.remove(player.getUniqueId());
             return;
         }
 
         if(player.getPitch() < 0f) {
             if(!this.playersGliding.contains(player.getUniqueId())) {
-                player.setAllowFlight(true);
                 this.playersGliding.add(player.getUniqueId());
             }
             return;
@@ -113,7 +101,6 @@ public class HangliderManager {
 
         if(player.getLocation().subtract(0.0D, 1.0D, 0.0D).getBlock().getType() == Material.AIR) {
             if(!this.playersGliding.contains(player.getUniqueId())) {
-                player.setAllowFlight(true);
                 this.playersGliding.add(player.getUniqueId());
             }
 
@@ -135,9 +122,26 @@ public class HangliderManager {
         if (event.getCause() == EntityDamageEvent.DamageCause.FALL &&
                 this.playersGliding.contains(player.getUniqueId())) {
             event.setCancelled(true);
-            player.setAllowFlight(false);
-            player.setFlying(false);
             this.playersGliding.remove(player.getUniqueId());
+        }
+    }
+
+    public void handleInteract(PlayerInteractEvent event) {
+        ItemStack item = event.getItem();
+
+        if(this.isHanglider(item)) {
+            event.setCancelled(true);
+        }
+
+    }
+
+    public void handleAnvil(PrepareAnvilEvent event) {
+        ItemStack[] items = event.getInventory().getContents();
+        for(ItemStack item: items) {
+            if(this.isHanglider(item)) {
+                event.setResult(new ItemStack(Material.AIR));
+                break;
+            }
         }
     }
 }
